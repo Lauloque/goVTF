@@ -1,40 +1,26 @@
 # goVTF
 
-
-
 ## What is this?
-
-
 
 goVTF is a humble attempt to imit ate VTFLib and VTFCmd, VALVe's library and its CLI to create a "Valve Texture File" (VTF) used in VALVe games. But usable in Linux.
 
-
-
 It is made in the context of [Boot.dev's Interactive Course: First Personal Project ](https://www.boot.dev/courses/build-personal-project-1).
-
-
 
 First implementation should just be able to take a common picture file and output a VTF usable as a "spray" in TF2.
 
-
-
 ## Resources
 
-[VTF (Valve Texture Format) - Valve Developer Community](https://developer.valvesoftware.com/w/index.php?title=VTF_\(Valve_Texture_Format\)&utm_source=chatgpt.com)
+- [VTF (Valve Texture Format) - Valve Developer Community](https://developer.valvesoftware.com/w/index.php?title=VTF_\(Valve_Texture_Format\)&utm_source=chatgpt.com)
 
-[VMT - Valve Developer Community](https://developer.valvesoftware.com/wiki/VMT)
+- [VMT - Valve Developer Community](https://developer.valvesoftware.com/wiki/VMT) 
 
-[VTFCmd - Valve Developer Community](https://developer.valvesoftware.com/wiki/VTFCmd)
+- [VTFCmd - Valve Developer Community](https://developer.valvesoftware.com/wiki/VTFCmd)
 
-[VTFLib - Valve Developer Community](https://developer.valvesoftware.com/wiki/VTFLib)
+- [VTFLib - Valve Developer Community](https://developer.valvesoftware.com/wiki/VTFLib)
 
-
-
-
+- [Sky-rym/VTFEdit-Reloaded](https://github.com/Sky-rym/VTFEdit-Reloaded)
 
 ## cmd reference:
-
-
 
 ```
 -file <path>             (Input file path.)
@@ -76,5 +62,3 @@ First implementation should just be able to take a common picture file and outpu
 -pause                   (Pause when done.)
 -help                    (Display vtfcmd help.)
 ```
-
-
