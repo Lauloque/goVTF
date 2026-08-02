@@ -30,7 +30,7 @@ var fileCmd = &cobra.Command{
 
 		input_ext := filepath.Ext(input_path)
 		switch input_ext {
-		case "png", "jpg", "jpeg":
+		case ".png", ".jpg", ".jpeg":
 			fmt.Printf("Found '%s' image in '%s'\n", input_ext, input_path)
 		default:
 			fmt.Printf("Unsupported file foramt '%s' found in '%s'\n", input_ext, input_path)
