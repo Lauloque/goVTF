@@ -11,7 +11,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "govtf",
+	Use:   "goVTF",
 	Short: "An ersatz of VTFLib and VTFCmd that should work on linux",
 	Long: `goVTF is a humble attempt to imit ate VTFLib and VTFCmd, VALVe's
 library and its CLI to create a "Valve Texture File" (VTF) used in VALVe games.
