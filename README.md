@@ -10,9 +10,9 @@ First implementation should just be able to take a common picture file and outpu
 
 ## Resources
 
-- [VTF (Valve Texture Format) - Valve Developer Community](https://developer.valvesoftware.com/w/index.php?title=VTF_\(Valve_Texture_Format\)&utm_source=chatgpt.com)
+- [VTF (Valve Texture Format) - Valve Developer Community](<https://developer.valvesoftware.com/w/index.php?title=VTF_(Valve_Texture_Format)&utm_source=chatgpt.com>)
 
-- [VMT - Valve Developer Community](https://developer.valvesoftware.com/wiki/VMT) 
+- [VMT - Valve Developer Community](https://developer.valvesoftware.com/wiki/VMT)
 
 - [VTFCmd - Valve Developer Community](https://developer.valvesoftware.com/wiki/VTFCmd)
 
@@ -62,3 +62,8 @@ First implementation should just be able to take a common picture file and outpu
 -pause                   (Pause when done.)
 -help                    (Display vtfcmd help.)
 ```
+
+### License
+
+Project: see [LICENSE]()
+VTF.jpeg: test file taken from [Steam 社群 :: :: VTF Edit-Chan](https://steamcommunity.com/sharedfiles/filedetails/?&id=3046622181)
