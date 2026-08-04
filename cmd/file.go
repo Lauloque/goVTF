@@ -15,15 +15,14 @@ var fileCmd = &cobra.Command{
 	Short: "Input file path",
 	Long:  `Input file path to a png, jpg or tga image to process.`,
 	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		input_path := args[0]
 
 		_, err := os.Stat(input_path)
 		if os.IsNotExist(err) {
-			fmt.Printf("Couldn't find '%s'\n", input_path)
-			return
+			return fmt.Errorf("Couldn't find '%s'", input_path)
 		} else if err != nil {
-			fmt.Println("Error: ", err)
+			return fmt.Errorf("Error: %w", err)
 		}
 
 		input_ext := filepath.Ext(input_path)
@@ -34,6 +33,20 @@ var fileCmd = &cobra.Command{
 			fmt.Printf("Unsupported file foramt '%s' found in '%s'\n", input_ext, input_path)
 		}
 
+		output_path := outputDir
+
+		_, err = os.Stat(output_path)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("Couldn't find output directory '%s'", output_path)
+		} else if os.IsPermission(err) {
+			return fmt.Errorf("Permission denied for output directory '%s'", output_path)
+		} else if err != nil {
+			return fmt.Errorf("Error: %w", err)
+		}
+
+		fmt.Printf("Output directory '%s'\n", output_path)
+
+		return nil
 	},
 }
 
