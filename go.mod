@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 module github.com/Lauloque/goVTF
 
 go 1.26.4

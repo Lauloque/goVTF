@@ -1,6 +1,4 @@
-/*
-Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-*/
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 package cmd
 
 import (
