@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Lauloque/goVTF/imageutils"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +46,13 @@ var fileCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Output directory '%s'\n", output_path)
+
+		img, format, err := imageutils.Load(input_path)
+		if err != nil {
+			return fmt.Errorf("Error: %w", err)
+		}
+		fmt.Printf("Loaded %s\n", format)
+		fmt.Printf("Bounds: %v\n", img.Bounds())
 
 		return nil
 	},
