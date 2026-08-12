@@ -20,7 +20,7 @@ First implementation should just be able to take a common picture file and outpu
 
 - [Sky-rym/VTFEdit-Reloaded](https://github.com/Sky-rym/VTFEdit-Reloaded)
 
-## cmd reference:
+- [VTF Spray Converter](https://rafradek.github.io/Mishcatt/)
 
 ```
 -file <path>             (Input file path.)
