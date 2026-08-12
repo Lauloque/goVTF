@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Lauloque/goVTF/imageutils"
+	"github.com/Lauloque/goVTF/vtf"
 	"github.com/spf13/cobra"
 )
 
@@ -47,13 +49,41 @@ var fileCmd = &cobra.Command{
 
 		fmt.Printf("Output directory '%s'\n", output_path)
 
+		// -----------------------------------------------------
+		// End of inputs validation, will have to clean up later
+		// -----------------------------------------------------
+
+		// Image loading
 		img, format, err := imageutils.Load(input_path)
 		if err != nil {
-			return fmt.Errorf("Error: %w", err)
+			return fmt.Errorf("Error loading image: %w", err)
 		}
 		fmt.Printf("Loaded %s\n", format)
 		fmt.Printf("Bounds: %v\n", img.Bounds())
 
+		// Texture loading
+		tex := imageutils.LoadTexture(input_path)
+		if tex == nil {
+			return fmt.Errorf("Failed to load texture from '%s'", input_path)
+		}
+		fmt.Printf("Loaded %dx%d texture\n", tex.Width, tex.Height)
+
+		// Output file creation
+		input_base := filepath.Base(input_path)
+		input_stem := strings.TrimSuffix(input_base, input_ext)
+		output_file := filepath.Join(output_path, input_stem+".vtf")
+		f, err := os.Create(output_file)
+		if err != nil {
+			return fmt.Errorf("Error creating output file: %w", err)
+		}
+		defer f.Close()
+
+		// Output file writing
+		if err := vtf.Write(f, tex); err != nil {
+			return fmt.Errorf("Error writing VTF: %w", err)
+		}
+
+		fmt.Printf("Successfully wrote '%s'\n", output_file)
 		return nil
 	},
 }
