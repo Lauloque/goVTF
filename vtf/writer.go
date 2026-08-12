@@ -9,10 +9,18 @@ import (
 	"github.com/Lauloque/goVTF/texture"
 )
 
+func isPowerOfTwo(n uint) bool {
+	return n > 0 && (n&(n-1)) == 0
+}
+
 func Write(w io.Writer, tex *texture.Texture) error {
 	// Validate dimensions first
 	if tex.Width%4 != 0 || tex.Height%4 != 0 {
 		return fmt.Errorf("dimensions must be multiples of 4, got %dx%d", tex.Width, tex.Height)
+	}
+
+	if !isPowerOfTwo(uint(tex.Width)) || !isPowerOfTwo(uint(tex.Height)) {
+		return fmt.Errorf("dimensions must be power of 2, got %dx%d", tex.Width, tex.Height)
 	}
 
 	// Calculate low-res thumbnail size (max 16px on either dimension, DXT1 blocks)
