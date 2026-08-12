@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Lauloque/goVTF/imageutils"
 	"github.com/Lauloque/goVTF/texture"
 )
 
@@ -36,6 +37,10 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// Hence multiple-of-4 requirement!
 	lowResWidth = ((lowResWidth + 3) / 4) * 4
 	lowResHeight = ((lowResHeight + 3) / 4) * 4
+
+	// Calculate mipmap count
+	mipmapCount := imageutils.CountMipmaps(tex.Width, tex.Height)
+	fmt.Printf("Mimmap count: %d", mipmapCount)
 
 	// Build header manually (96 bytes exactly per VTF 7.4 spec)
 	header := make([]byte, 96)
@@ -81,7 +86,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	binary.LittleEndian.PutUint32(header[52:56], ImageFormatRGBA8888)
 
 	// MipmapCount: uint8 (offset 56)
-	header[56] = 1
+	header[56] = uint8(mipmapCount)
 
 	// LowResFormat: int32 (offset 57-60)
 	binary.LittleEndian.PutUint32(header[57:61], ImageFormatDXT1)
@@ -99,7 +104,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	copy(header[65:68], []byte{0, 0, 0})
 
 	// NumResources: uint32 (offset 68-71)
-	binary.LittleEndian.PutUint32(header[68:72], 1)
+	binary.LittleEndian.PutUint32(header[68:72], 0)
 
 	// Padding3: 8 bytes (offset 72-79)
 	copy(header[72:80], []byte{0, 0, 0, 0, 0, 0, 0, 0})
@@ -124,6 +129,17 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// Write raw RGBA8888 pixel data
 	if _, err := w.Write(tex.Pixels); err != nil {
 		return err
+	}
+
+	// Write additional mipmaps (smaller than full res)
+	// Skip the first one since we already wrote the full res above
+	if mipmapCount > 1 {
+		mipMaps := imageutils.GenerateMipmaps(tex)
+		for i := 1; i < len(mipMaps); i++ {
+			if _, err := w.Write(mipMaps[i]); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
