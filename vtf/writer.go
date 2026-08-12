@@ -110,14 +110,16 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	}
 
 	// Write resource entry for high-res image (8 bytes)
-	resource := make([]byte, 8)
-	copy(resource[0:3], TagHIRES[:])                  // Tag: 3 bytes
-	resource[3] = 0                                   // Flags: 1 byte
-	binary.LittleEndian.PutUint32(resource[4:8], 104) // Offset: 96 + 8 = 104
+	// DISABLED: to avoid TF2 saying `*** Error unserializing VTF file... is the file empty?`
+	//
+	// resource := make([]byte, 8)
+	// copy(resource[0:3], TagHIRES[:])                  // Tag: 3 bytes
+	// resource[3] = 0                                   // Flags: 1 byte
+	// binary.LittleEndian.PutUint32(resource[4:8], 104) // Offset: 96 + 8 = 104
 
-	if _, err := w.Write(resource); err != nil {
-		return err
-	}
+	// if _, err := w.Write(resource); err != nil {
+	// 	return err
+	// }
 
 	// Write raw RGBA8888 pixel data
 	if _, err := w.Write(tex.Pixels); err != nil {
