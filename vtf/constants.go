@@ -11,12 +11,17 @@ const (
 
 	ImageFormatRGBA8888 = 0
 	ImageFormatDXT1     = 14
+
+	TextureFlagClampS = 0x00000004
+	TextureFlagClampT = 0x00000008
+	TextureFlagNormal = 0x00000080
 )
 
-// Resource tags (cannot be constants in Go)
+// pseudo-constants that cannot be constants in Go
 var (
-	TagHIRES = [3]byte{0x30, 0x00, 0x00} // High-res image data
-	TagLORES = [3]byte{0x01, 0x00, 0x00} // Low-res thumbnail
+	TagHIRES   = [3]byte{0x30, 0x00, 0x00} // High-res image data
+	TagLORES   = [3]byte{0x01, 0x00, 0x00} // Low-res thumbnail
+	SprayFlags = TextureFlagClampS | TextureFlagClampT
 )
 
 // Helper to create resource tag from string (for extension purposes)

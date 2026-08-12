@@ -24,15 +24,16 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	}
 
 	// Calculate low-res thumbnail size (max 16px on either dimension, DXT1 blocks)
-	lowResWidth := uint8(tex.Width)
-	lowResHeight := uint8(tex.Height)
-	if lowResWidth > 16 {
-		lowResWidth = 16
+	lowResWidth := 16
+	lowResHeight := 16
+	if tex.Width <= 16 {
+		lowResWidth = tex.Width
 	}
-	if lowResHeight > 16 {
-		lowResHeight = 16
+	if tex.Height <= 16 {
+		lowResHeight = tex.Height
 	}
 	// Round up to nearest 4 for DXT1 compression alignment
+	// Hence multiple-of-4 requirement!
 	lowResWidth = ((lowResWidth + 3) / 4) * 4
 	lowResHeight = ((lowResHeight + 3) / 4) * 4
 
@@ -42,7 +43,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		HeaderSize:    HeaderSize,
 		Width:         uint16(tex.Width),
 		Height:        uint16(tex.Height),
-		Flags:         0,
+		Flags:         uint32(SprayFlags),
 		Frames:        1,
 		FirstFrame:    0,
 		Reflectivity:  [3]float32{1.0, 1.0, 1.0},
@@ -50,10 +51,18 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		HighResFormat: ImageFormatRGBA8888,
 		MipmapCount:   1,
 		LowResFormat:  ImageFormatDXT1,
-		LowResWidth:   lowResWidth,
-		LowResHeight:  lowResHeight,
+		LowResWidth:   uint8(lowResWidth),
+		LowResHeight:  uint8(lowResHeight),
 		Depth:         1,
 		NumResources:  1, // Only high-res image, no thumbnail for minimal v1
+	}
+
+	// DEBUG: Print header values before writing
+	fmt.Printf("[DEBUG] LowResWidth=%d, LowResHeight=%d, NumResources=%d\n",
+		header.LowResWidth, header.LowResHeight, header.NumResources)
+
+	if err := binary.Write(w, binary.LittleEndian, header); err != nil {
+		return err
 	}
 
 	// Write header
