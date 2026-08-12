@@ -37,47 +37,85 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	lowResWidth = ((lowResWidth + 3) / 4) * 4
 	lowResHeight = ((lowResHeight + 3) / 4) * 4
 
-	header := VTFHeader{
-		Signature:     [4]byte{'V', 'T', 'F', 0},
-		Version:       [2]uint32{SignatureVersionMajor, SignatureVersionMinor},
-		HeaderSize:    HeaderSize,
-		Width:         uint16(tex.Width),
-		Height:        uint16(tex.Height),
-		Flags:         uint32(SprayFlags),
-		Frames:        1,
-		FirstFrame:    0,
-		Reflectivity:  [3]float32{1.0, 1.0, 1.0},
-		BumpmapScale:  1.0,
-		HighResFormat: ImageFormatRGBA8888,
-		MipmapCount:   1,
-		LowResFormat:  ImageFormatDXT1,
-		LowResWidth:   uint8(lowResWidth),
-		LowResHeight:  uint8(lowResHeight),
-		Depth:         1,
-		NumResources:  1, // Only high-res image, no thumbnail for minimal v1
-	}
+	// Build header manually (96 bytes exactly per VTF 7.4 spec)
+	header := make([]byte, 96)
 
-	// DEBUG: Print header values before writing
-	fmt.Printf("[DEBUG] LowResWidth=%d, LowResHeight=%d, NumResources=%d\n",
-		header.LowResWidth, header.LowResHeight, header.NumResources)
+	// Signature: 4 bytes
+	copy(header[0:4], []byte("VTF\x00"))
 
-	if err := binary.Write(w, binary.LittleEndian, header); err != nil {
-		return err
-	}
+	// Version: 2 × uint32 (offsets 4-11)
+	binary.LittleEndian.PutUint32(header[4:8], SignatureVersionMajor)
+	binary.LittleEndian.PutUint32(header[8:12], SignatureVersionMinor)
+
+	// HeaderSize: uint32 (offset 12-15)
+	binary.LittleEndian.PutUint32(header[12:16], HeaderSize)
+
+	// Width/Height: uint16 (offsets 16-19)
+	binary.LittleEndian.PutUint16(header[16:18], uint16(tex.Width))
+	binary.LittleEndian.PutUint16(header[18:20], uint16(tex.Height))
+
+	// Flags: uint32 (offset 20-23)
+	binary.LittleEndian.PutUint32(header[20:24], uint32(SprayFlags))
+
+	// Frames: uint16 (offset 24-25)
+	binary.LittleEndian.PutUint16(header[24:26], 1)
+
+	// FirstFrame: uint16 (offset 26-27)
+	binary.LittleEndian.PutUint16(header[26:28], 0)
+
+	// Padding0: 4 bytes (offset 28-31)
+	copy(header[28:32], []byte{0, 0, 0, 0})
+
+	// Reflectivity: 3 × float32 (offset 32-43)
+	binary.LittleEndian.PutUint32(header[32:36], 0x3f800000) // 1.0
+	binary.LittleEndian.PutUint32(header[36:40], 0x3f800000) // 1.0
+	binary.LittleEndian.PutUint32(header[40:44], 0x3f800000) // 1.0
+
+	// Padding1: 4 bytes (offset 44-47)
+	copy(header[44:48], []byte{0, 0, 0, 0})
+
+	// BumpmapScale: float32 (offset 48-51)
+	binary.LittleEndian.PutUint32(header[48:52], 0x3f800000) // 1.0
+
+	// HighResFormat: int32 (offset 52-55)
+	binary.LittleEndian.PutUint32(header[52:56], ImageFormatRGBA8888)
+
+	// MipmapCount: uint8 (offset 56)
+	header[56] = 1
+
+	// LowResFormat: int32 (offset 57-60)
+	binary.LittleEndian.PutUint32(header[57:61], ImageFormatDXT1)
+
+	// LowResWidth: uint8 (offset 61)
+	header[61] = uint8(lowResWidth)
+
+	// LowResHeight: uint8 (offset 62)
+	header[62] = uint8(lowResHeight)
+
+	// Depth: uint16 (offset 63-64)
+	binary.LittleEndian.PutUint16(header[63:65], 1)
+
+	// Padding2: 3 bytes (offset 65-67)
+	copy(header[65:68], []byte{0, 0, 0})
+
+	// NumResources: uint32 (offset 68-71)
+	binary.LittleEndian.PutUint32(header[68:72], 1)
+
+	// Padding3: 8 bytes (offset 72-79)
+	copy(header[72:80], []byte{0, 0, 0, 0, 0, 0, 0, 0})
 
 	// Write header
-	if err := binary.Write(w, binary.LittleEndian, header); err != nil {
+	if _, err := w.Write(header); err != nil {
 		return err
 	}
 
-	// Write resource entry for high-res image
-	// Offset = header size (96) + resource entry size (8)
-	resource := ResourceEntry{
-		Tag:    TagHIRES,
-		Flags:  0,
-		Offset: HeaderSize + 8,
-	}
-	if err := binary.Write(w, binary.LittleEndian, resource); err != nil {
+	// Write resource entry for high-res image (8 bytes)
+	resource := make([]byte, 8)
+	copy(resource[0:3], TagHIRES[:])                  // Tag: 3 bytes
+	resource[3] = 0                                   // Flags: 1 byte
+	binary.LittleEndian.PutUint32(resource[4:8], 104) // Offset: 96 + 8 = 104
+
+	if _, err := w.Write(resource); err != nil {
 		return err
 	}
 

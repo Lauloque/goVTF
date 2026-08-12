@@ -9,36 +9,46 @@ import (
 	"github.com/Lauloque/goVTF/texture"
 )
 
-// Test VTFHeader struct layout matches the spec
-func TestVTFHeaderLayout(t *testing.T) {
-	var h VTFHeader
+// TestVTFHeaderByteOffsets - verifies manual byte layout matches VTF spec
+func TestVTFHeaderByteOffsets(t *testing.T) {
+	// This validates the offsets used in manual byte construction
+	// match the VTF 7.4 spec exactly
 
-	// Total header size should be 96 bytes for VTF 7.3+
-	if size := binary.Size(h); size != 96 {
-		t.Errorf("Expected VTFHeader size to be 96 bytes, got %d", size)
-	}
-
-	// Critical field offsets match spec
 	tests := []struct {
-		name     string
-		offset   uintptr
-		expected uintptr
+		fieldName string
+		offset    int
+		length    int
+		expected  []byte
 	}{
-		{"Signature", 0, 0},
-		{"Version", 4, 4},
-		{"HeaderSize", 12, 12},
-		{"Width", 16, 16},
-		{"Height", 18, 18},
-		{"Flags", 20, 20},
-		{"LowResWidth", 58, 58},
-		{"LowResHeight", 59, 59},
-		{"NumResources", 66, 66},
+		{"Signature", 0, 4, []byte("VTF\x00")},
+		{"VersionMajor", 4, 4, []byte{0x07, 0x00, 0x00, 0x00}},
+		{"VersionMinor", 8, 4, []byte{0x04, 0x00, 0x00, 0x00}},
+		{"HeaderSize", 12, 4, []byte{0x60, 0x00, 0x00, 0x00}},
+		{"LowResWidth", 61, 1, []byte{0x10}},  // 16
+		{"LowResHeight", 62, 1, []byte{0x10}}, // 16
+		{"NumResources", 68, 4, []byte{0x01, 0x00, 0x00, 0x00}},
 	}
+
+	tex := texture.NewTexture(512, 512, texture.PixelFormatRGBA8888, make([]byte, 512*512*4))
+	var buf bytes.Buffer
+	err := Write(&buf, tex)
+	if err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	data := buf.Bytes()
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Note: You'd need unsafe.Offsetof() here, but we're testing
-			// the serialized output instead to avoid import issues
+		t.Run(tt.fieldName, func(t *testing.T) {
+			if len(data) < tt.offset+tt.length {
+				t.Errorf("Buffer too short at offset %d", tt.offset)
+				return
+			}
+
+			got := data[tt.offset : tt.offset+tt.length]
+			if !bytes.Equal(got, tt.expected) {
+				t.Errorf("At offset %d: expected %x, got %x", tt.offset, tt.expected, got)
+			}
 		})
 	}
 }
@@ -193,16 +203,16 @@ func TestVTFWriteRoundTrip(t *testing.T) {
 	}
 
 	// CRITICAL: Check low-res dimensions (the bug we just found!)
-	lowResWidth := data[58]
-	lowResHeight := data[59]
+	lowResWidth := data[61]
+	lowResHeight := data[62]
 	if lowResWidth != 16 || lowResHeight != 16 {
-		t.Errorf("Expected low-res dimensions 16x16, got %dx%d", lowResWidth, lowResHeight)
+		t.Errorf("Expected low-res dimensions 16x16 at offsets 61-62, got %dx%d", lowResWidth, lowResHeight)
 	}
 
 	// Check NumResources
-	numResources := binary.LittleEndian.Uint32(data[66:70])
+	numResources := binary.LittleEndian.Uint32(data[68:72])
 	if numResources != 1 {
-		t.Errorf("Expected NumResources=1, got %d", numResources)
+		t.Errorf("Expected NumResources=1 at offset 68, got %d", numResources)
 	}
 
 	// Check file size: header(96) + resource(8) + pixels(512*512*4)
