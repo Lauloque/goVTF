@@ -97,29 +97,25 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// ============ RESOURCES ==========================================
 	// Calculate offsets
 	// Header (80) + LowResEntry (8) + LowResData + HighResEntry (8)
-	lowResOffset := uint32(HeaderSize + 8)
+	lowResOffset := uint32(HeaderSize) + uint32(8*header.NumResources) // 80 + 16 = 96
 	highResOffset := lowResOffset + 8 + uint32(len(lowResData))
 
-	// Write Low-Res Resource
+	// --- Write resource dictionaries ---
 	if err := WriteResourceEntry(w, TagLORES, 0, lowResOffset); err != nil {
 		return err
 	}
+	if err := WriteResourceEntry(w, TagHIRES, 0, highResOffset); err != nil {
+		return err
+	}
+
+	// --- Write resource data ---
 	if _, err := w.Write(lowResData); err != nil {
-		return err
-	}
-
-	// Write High-Res Resource
-	if err := WriteResourceEntry(w, TagHIRES, 0, highResOffset); err != nil {
-		return err
-	}
-
-	// Write raw RGBA8888 pixel data
-	if err := WriteResourceEntry(w, TagHIRES, 0, highResOffset); err != nil {
 		return err
 	}
 	if _, err := w.Write(highResData); err != nil {
 		return err
 	}
+
 	// -------------------------------------------------------------
 	// Write DXT1-compressed pixel data
 	// if _, err := w.Write(compressedHiRes); err != nil {
