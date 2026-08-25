@@ -128,12 +128,12 @@ func compressBlockDXT1(pixels [16]uint32) [8]byte {
 	var out [8]byte
 
 	// Bytes 0-1: c0 (big-endian 16-bit)
-	out[0] = byte(c0 >> 8)
-	out[1] = byte(c0)
+	out[0] = byte(c0)
+	out[1] = byte(c0 >> 8)
 
 	// Bytes 2-3: c1 (big-endian 16-bit)
-	out[2] = byte(c1 >> 8)
-	out[3] = byte(c1)
+	out[2] = byte(c1)
+	out[3] = byte(c1 >> 8)
 
 	// Bytes 4-7: 16 × 2-bit indices (packed)
 	// Group 4 indices per byte
