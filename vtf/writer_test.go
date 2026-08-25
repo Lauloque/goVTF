@@ -147,9 +147,9 @@ func TestVTFWriteRoundTrip(t *testing.T) {
 
 	// Calculate Expected Size Dynamically
 	lowResW, lowResH := uint8(16), uint8(16) // For 512x512
-	lowResDataSize := int(lowResW) * int(lowResH) * 4
-	highResDataSize := 512 * 512 * 4
-	expectedTotal := HeaderSize + 8 + lowResDataSize + 8 + highResDataSize
+	lowResDataSize := (int(lowResW) * int(lowResH)) / 2
+	highResDataSize := (512 * 512) / 2
+	expectedTotal := HeaderSize + lowResDataSize + highResDataSize
 
 	if len(data) != expectedTotal {
 		t.Errorf("Expected total size %d, got %d", expectedTotal, len(data))
