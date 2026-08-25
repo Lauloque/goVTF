@@ -48,6 +48,9 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	lowResWidth = ((lowResWidth + 3) / 4) * 4
 	lowResHeight = ((lowResHeight + 3) / 4) * 4
 
+	// ==== CALCULATE HEADER SIZE DYNAMICALLY ====
+	headerSize := uint32(HeaderSize) + uint32(numResources*8) // 80 + 16 = 96
+
 	// ============ PREPARE LOW RES DATA (DXT1) ========================
 	lowResData, err := CompressThumbnailDXT1(tex.Pixels, tex.Width, tex.Height, lowResWidth, lowResHeight)
 	if err != nil {
@@ -71,7 +74,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	header := VTFHeader{
 		Signature:     [4]byte{'V', 'T', 'F', 0},
 		Version:       [2]uint32{SignatureVersionMajor, SignatureVersionMinor},
-		HeaderSize:    HeaderSize,
+		HeaderSize:    headerSize,
 		Width:         uint16(tex.Width),
 		Height:        uint16(tex.Height),
 		Flags:         uint32(SprayFlags),
@@ -86,7 +89,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		LowResHeight:  uint8(lowResHeight),
 		Depth:         1,
 		Padding2:      [3]byte{},
-		NumResources:  2,
+		NumResources:  numResources,
 		Padding3:      [8]byte{},
 	}
 
@@ -97,8 +100,8 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// ============ RESOURCES ==========================================
 	// Calculate offsets
 	// Header (80) + LowResEntry (8) + LowResData + HighResEntry (8)
-	lowResOffset := uint32(HeaderSize) + uint32(8*header.NumResources) // 80 + 16 = 96
-	highResOffset := lowResOffset + 8 + uint32(len(lowResData))
+	lowResOffset := headerSize
+	highResOffset := lowResOffset + uint32(len(lowResData))
 
 	// --- Write resource dictionaries ---
 	if err := WriteResourceEntry(w, TagLORES, 0, lowResOffset); err != nil {

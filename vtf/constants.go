@@ -14,6 +14,7 @@ const (
 	TextureFlagClampS     = 0x00000004
 	TextureFlagClampT     = 0x00000008
 	TextureFlagNormal     = 0x00000080
+	numResources          = 2
 )
 
 // pseudo-constants that cannot be constants in Go
