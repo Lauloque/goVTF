@@ -93,9 +93,8 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// ============ RESOURCES ==========================================
 	// Calculate offsets
 	// Header (80) + LowResEntry (8) + LowResData + HighResEntry (8)
-	lowResDataSize := int(lowResWidth) * int(lowResHeight) * 4
 	lowResOffset := uint32(HeaderSize + 8)
-	highResOffset := lowResOffset + 8 + uint32(lowResDataSize)
+	highResOffset := lowResOffset + 8 + uint32(len(lowResData))
 
 	// Write Low-Res Resource
 	if err := WriteResourceEntry(w, TagLORES, 0, lowResOffset); err != nil {
