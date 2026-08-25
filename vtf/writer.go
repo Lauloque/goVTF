@@ -61,6 +61,10 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// mipmapCount := imageutils.CountMipmaps(tex.Width, tex.Height)
 	// fmt.Printf("Mipmap count: %d\n", mipmapCount)
 
+	// ============ PREPARE HIGH RES DATA (DXT1)========================
+	highResData := imageutils.CompressDXT1(tex)
+	// should implement error handling later
+
 	// ============CONSTRUCT HEADER=====================================
 
 	// Create header data and then write it
@@ -110,7 +114,10 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	}
 
 	// Write raw RGBA8888 pixel data
-	if _, err := w.Write(tex.Pixels); err != nil {
+	if err := WriteResourceEntry(w, TagHIRES, 0, highResOffset); err != nil {
+		return err
+	}
+	if _, err := w.Write(highResData); err != nil {
 		return err
 	}
 	// -------------------------------------------------------------
