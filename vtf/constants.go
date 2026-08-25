@@ -6,15 +6,14 @@ package vtf
 // File signatures and format codes
 const (
 	SignatureVersionMajor = 7
-	SignatureVersionMinor = 4
-	HeaderSize            = 96 // 80 base + 16 for 7.3+ fields
-
-	ImageFormatRGBA8888 = 0
-	ImageFormatDXT1     = 14
-
-	TextureFlagClampS = 0x00000004
-	TextureFlagClampT = 0x00000008
-	TextureFlagNormal = 0x00000080
+	SignatureVersionMinor = 3
+	HeaderSize            = 80
+	ImageFormatRGBA8888   = 0
+	ImageFormatDXT1       = 14
+	ImageFormatDXT5       = 16
+	TextureFlagClampS     = 0x00000004
+	TextureFlagClampT     = 0x00000008
+	TextureFlagNormal     = 0x00000080
 )
 
 // pseudo-constants that cannot be constants in Go
