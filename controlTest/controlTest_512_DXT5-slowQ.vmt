@@ -1,0 +1,8 @@
+"UnlitGeneric"
+{
+	"$basetexture"	"vgui/logos/controlTest_512_DXT5-slowQ"
+	"$translucent" "1"
+	"$ignorez" "1"
+	"$vertexcolor" "1"
+	"$vertexalpha" "1"
+}

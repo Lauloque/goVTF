@@ -1,0 +1,8 @@
+"UnlitGeneric"
+{
+	"$basetexture"	"vgui/logos/controlTest_512_RGBA8888-default"
+	"$translucent" "1"
+	"$ignorez" "1"
+	"$vertexcolor" "1"
+	"$vertexalpha" "1"
+}
