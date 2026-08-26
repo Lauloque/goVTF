@@ -57,9 +57,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		return fmt.Errorf("failed to compress thumbnail: %w", err)
 	}
 
-	// Calculate mipmap count
-	//
-	// temporary forced to no mipmap / full res
+	// ============ CALCULATE MIPMAP COUNT =============================
 	mipmapCount := 1
 	// mipmapCount := imageutils.CountMipmaps(tex.Width, tex.Height)
 	// fmt.Printf("Mipmap count: %d\n", mipmapCount)
@@ -119,18 +117,8 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		return err
 	}
 
-	// -------------------------------------------------------------
-	// Write DXT1-compressed pixel data
-	// if _, err := w.Write(compressedHiRes); err != nil {
-	// 	return err
-	// }
+	// --- Write additional mipmaps ---
 
-	// Write additional mipmaps (smaller than full res)
-	// Skip the first one since we already wrote the full res above
-	//
-	// temporary disabled for testing whether providing a lowres thumbnail is enough
-	// toggle back header[56] if needed.
-	//
 	if mipmapCount > 1 {
 		mipMaps := imageutils.GenerateMipmaps(tex)
 		for i := 1; i < len(mipMaps); i++ {
