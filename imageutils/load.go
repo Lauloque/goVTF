@@ -2,7 +2,6 @@
 package imageutils
 
 import (
-	"fmt"
 	"image"
 	"image/draw"
 	_ "image/jpeg"
@@ -11,24 +10,6 @@ import (
 
 	"github.com/Lauloque/goVTF/texture"
 )
-
-func ReadImage(inputPath string) {
-	f, err := os.Open(inputPath)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer f.Close()
-
-	img, format, err := image.Decode(f)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Printf("Decoded %s\n", format)
-	fmt.Printf("Bounds: %v\n", img.Bounds())
-}
 
 func Load(inputPath string) (image.Image, string, error) {
 	f, err := os.Open(inputPath)
@@ -45,10 +26,10 @@ func Load(inputPath string) (image.Image, string, error) {
 	return img, format, nil
 }
 
-func LoadTexture(inputPath string) *texture.Texture {
+func LoadTexture(inputPath string) (*texture.Texture, error) {
 	img, _, err := Load(inputPath)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	bounds := img.Bounds()
@@ -62,5 +43,5 @@ func LoadTexture(inputPath string) *texture.Texture {
 		bounds.Dy(),
 		texture.PixelFormatRGBA8888,
 		rgba.Pix,
-	)
+	), nil
 }

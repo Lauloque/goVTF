@@ -62,8 +62,8 @@ var fileCmd = &cobra.Command{
 		fmt.Printf("Bounds: %v\n", img.Bounds())
 
 		// Texture loading
-		tex := imageutils.LoadTexture(input_path)
-		if tex == nil {
+		tex, err := imageutils.LoadTexture(input_path)
+		if err != nil {
 			return fmt.Errorf("Failed to load texture from '%s'", input_path)
 		}
 		fmt.Printf("Loaded %dx%d texture\n", tex.Width, tex.Height)

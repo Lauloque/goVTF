@@ -9,22 +9,10 @@ import (
 	"github.com/Lauloque/goVTF/texture"
 )
 
-func isPowerOfTwo(n uint) bool {
-	return n > 0 && (n&(n-1)) == 0
-}
-
 func Write(w io.Writer, tex *texture.Texture) error {
 	// ============VALIDATION===========================================
-	if tex.Width <= 0 || tex.Height <= 0 {
-		return fmt.Errorf("dimensions must be positive")
-	}
-
-	if tex.Width%4 != 0 || tex.Height%4 != 0 {
-		return fmt.Errorf("dimensions must be multiples of 4, got %dx%d", tex.Width, tex.Height)
-	}
-
-	if !isPowerOfTwo(uint(tex.Width)) || !isPowerOfTwo(uint(tex.Height)) {
-		return fmt.Errorf("dimensions must be power of 2, got %dx%d", tex.Width, tex.Height)
+	if err := imageutils.ValidateDimensions(uint(tex.Width), uint(tex.Height)); err != nil {
+		return err
 	}
 
 	// ============CALCULATE LOW REST DIMENSION ========================
@@ -57,9 +45,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		return fmt.Errorf("failed to compress thumbnail: %w", err)
 	}
 
-	// Calculate mipmap count
-	//
-	// temporary forced to no mipmap / full res
+	// ============ CALCULATE MIPMAP COUNT =============================
 	mipmapCount := 1
 	// mipmapCount := imageutils.CountMipmaps(tex.Width, tex.Height)
 	// fmt.Printf("Mipmap count: %d\n", mipmapCount)
@@ -119,18 +105,8 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		return err
 	}
 
-	// -------------------------------------------------------------
-	// Write DXT1-compressed pixel data
-	// if _, err := w.Write(compressedHiRes); err != nil {
-	// 	return err
-	// }
+	// --- Write additional mipmaps ---
 
-	// Write additional mipmaps (smaller than full res)
-	// Skip the first one since we already wrote the full res above
-	//
-	// temporary disabled for testing whether providing a lowres thumbnail is enough
-	// toggle back header[56] if needed.
-	//
 	if mipmapCount > 1 {
 		mipMaps := imageutils.GenerateMipmaps(tex)
 		for i := 1; i < len(mipMaps); i++ {

@@ -174,15 +174,3 @@ func rgbTo565(rgb uint32) uint16 {
 
 	return (r5 << 11) | (g6 << 5) | b5
 }
-
-// colorDistance calculates Manhattan distance between two RGB colors
-func colorDistance(c1, c2 uint32) uint32 {
-	r1, g1, b1 := (c1>>16)&0xFF, (c1>>8)&0xFF, c1&0xFF
-	r2, g2, b2 := (c2>>16)&0xFF, (c2>>8)&0xFF, c2&0xFF
-
-	dr := r1 - r2
-	dg := g1 - g2
-	db := b1 - b2
-
-	return uint32(dr + dg + db)
-}
