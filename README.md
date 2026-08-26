@@ -6,6 +6,9 @@ goVTF is a humble attempt to imit ate VTFLib and VTFCmd, VALVe's library and its
 
 It is made in the context of [Boot.dev's Interactive Course: First Personal Project ](https://www.boot.dev/courses/build-personal-project-1).
 
+<img width="900" height="550" alt="image" src="https://github.com/user-attachments/assets/606dbef9-033b-428b-9f5c-3f3e41870c3a" />
+
+
 First implementation should just be able to take a common picture file without transparency and output a VTF usable as a "spray" in TF2.
 
 ## General usage:
