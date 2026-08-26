@@ -46,9 +46,8 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	}
 
 	// ============ CALCULATE MIPMAP COUNT =============================
-	mipmapCount := 1
-	// mipmapCount := imageutils.CountMipmaps(tex.Width, tex.Height)
-	// fmt.Printf("Mipmap count: %d\n", mipmapCount)
+	mipmapCount := imageutils.CountMipmaps(tex.Width, tex.Height)
+	fmt.Printf("Mipmap count: %d\n", mipmapCount)
 
 	// ============ PREPARE HIGH RES DATA (DXT1)========================
 	highResData := imageutils.CompressDXT1(tex)
@@ -88,6 +87,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// Header (80) + LowResEntry (8) + LowResData + HighResEntry (8)
 	lowResOffset := headerSize
 	highResOffset := lowResOffset + uint32(len(lowResData))
+	mipMaps := imageutils.GenerateMipmaps(tex)
 
 	// --- Write resource dictionaries ---
 	if err := WriteResourceEntry(w, TagLORES, 0, lowResOffset); err != nil {
@@ -98,22 +98,19 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	}
 
 	// --- Write resource data ---
+	// Order is important: lowResData -> mipmaps(lowest->largets)->highRes
 	if _, err := w.Write(lowResData); err != nil {
 		return err
 	}
-	if _, err := w.Write(highResData); err != nil {
-		return err
+
+	for _, level := range mipMaps {
+		if _, err := w.Write(level); err != nil {
+			return err
+		}
 	}
 
-	// --- Write additional mipmaps ---
-
-	if mipmapCount > 1 {
-		mipMaps := imageutils.GenerateMipmaps(tex)
-		for i := 1; i < len(mipMaps); i++ {
-			if _, err := w.Write(mipMaps[i]); err != nil {
-				return err
-			}
-		}
+	if _, err := w.Write(highResData); err != nil {
+		return err
 	}
 
 	return nil
