@@ -6,7 +6,22 @@ goVTF is a humble attempt to imit ate VTFLib and VTFCmd, VALVe's library and its
 
 It is made in the context of [Boot.dev's Interactive Course: First Personal Project ](https://www.boot.dev/courses/build-personal-project-1).
 
-First implementation should just be able to take a common picture file and output a VTF usable as a "spray" in TF2.
+First implementation should just be able to take a common picture file without transparency and output a VTF usable as a "spray" in TF2.
+
+## General usage:
+
+`goVTF [command]`
+
+Available Commands:
+`completion` Generate the autocompletion script for the specified shell
+`file` Input file path
+`help` Help about any command
+
+Flags:
+`-h`, `--help` help for goVTF
+`-o`, `--output` string Output directory (default "./")
+
+Use `goVTF [command] --help` for more information about a command.
 
 ## Resources
 
