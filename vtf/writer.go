@@ -52,7 +52,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	headerSize := uint32(HeaderSize) + uint32(numResources*8) // 80 + 16 = 96
 
 	// ============ PREPARE LOW RES DATA (DXT1) ========================
-	lowResData, err := CompressThumbnailDXT1(tex.Pixels, tex.Width, tex.Height, lowResWidth, lowResHeight)
+	lowResData, err := imageutils.CompressThumbnailDXT1(tex.Pixels, tex.Width, tex.Height, lowResWidth, lowResHeight)
 	if err != nil {
 		return fmt.Errorf("failed to compress thumbnail: %w", err)
 	}

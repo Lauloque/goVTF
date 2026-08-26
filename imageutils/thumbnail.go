@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-package vtf
+package imageutils
 
 import (
-	"github.com/Lauloque/goVTF/imageutils"
 	"github.com/Lauloque/goVTF/texture"
 )
 
@@ -27,5 +26,5 @@ func CompressThumbnailDXT1(srcPixels []byte, srcW, srcH, dstW, dstH int) ([]byte
 
 	// Compress
 	thumbTex := texture.NewTexture(dstW, dstH, texture.PixelFormatRGBA8888, thumbPixels)
-	return imageutils.CompressDXT1(thumbTex), nil
+	return CompressDXT1(thumbTex), nil
 }
