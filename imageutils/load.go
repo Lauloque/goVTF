@@ -26,10 +26,10 @@ func Load(inputPath string) (image.Image, string, error) {
 	return img, format, nil
 }
 
-func LoadTexture(inputPath string) *texture.Texture {
+func LoadTexture(inputPath string) (*texture.Texture, error) {
 	img, _, err := Load(inputPath)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	bounds := img.Bounds()
@@ -43,5 +43,5 @@ func LoadTexture(inputPath string) *texture.Texture {
 		bounds.Dy(),
 		texture.PixelFormatRGBA8888,
 		rgba.Pix,
-	)
+	), nil
 }
