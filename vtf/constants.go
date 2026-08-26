@@ -9,8 +9,9 @@ const (
 	SignatureVersionMinor = 3
 	HeaderSize            = 80
 	ImageFormatRGBA8888   = 0
-	ImageFormatDXT1       = 14
-	ImageFormatDXT5       = 16
+	ImageFormatDXT1       = 13
+	ImageFormatDXT3       = 14
+	ImageFormatDXT5       = 15
 	TextureFlagClampS     = 0x00000004
 	TextureFlagClampT     = 0x00000008
 	TextureFlagNormal     = 0x00000080
