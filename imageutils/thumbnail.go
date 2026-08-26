@@ -10,7 +10,10 @@ import (
 // average-based endpoint selection. It is sufficient for TF2 sprays.
 func CompressThumbnailDXT1(srcPixels []byte, srcW, srcH, dstW, dstH int) ([]byte, error) {
 	// Subsample (Nearest Neighbor) to thumbnail size
-	thumbPixels := Resize(srcPixels, srcW, srcH, dstW, dstH)
+	thumbPixels, err := Resize(srcPixels, srcW, srcH, dstW, dstH)
+	if err != nil {
+		return nil, err
+	}
 
 	// Compress
 	thumbTex := texture.NewTexture(dstW, dstH, texture.PixelFormatRGBA8888, thumbPixels)

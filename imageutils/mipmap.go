@@ -8,12 +8,16 @@ import (
 // GenerateMipmaps returns DXT1-compressed mip levels, ordered from smallets to
 // largest (VTF spec unlike usual common DDS).
 // Ignoring top level already included in highres resource.
-func GenerateMipmaps(tex *texture.Texture) [][]byte {
+func GenerateMipmaps(tex *texture.Texture) ([][]byte, error) {
 	var levels []*texture.Texture
 
 	currentTex := tex
 	for currentTex.Width > 1 && currentTex.Height > 1 {
-		currentTex = downSampleHalf(currentTex)
+		var err error
+		currentTex, err = downSampleHalf(currentTex)
+		if err != nil {
+			return nil, err
+		}
 		levels = append(levels, currentTex)
 	}
 
@@ -27,12 +31,12 @@ func GenerateMipmaps(tex *texture.Texture) [][]byte {
 		mipMaps[len(levels)-1-i] = CompressDXT1(lvl)
 	}
 
-	return mipMaps
+	return mipMaps, nil
 }
 
 func CountMipmaps(width, height int) int {
 	count := 1 // level 0 provided by fullres resource already
-	for w, h := width, height; w >= 1 && h >= 1; {
+	for w, h := width, height; w > 1 && h > 1; {
 		count++
 		w >>= 1
 		h >>= 1

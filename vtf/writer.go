@@ -87,7 +87,10 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// Header (80) + LowResEntry (8) + LowResData + HighResEntry (8)
 	lowResOffset := headerSize
 	highResOffset := lowResOffset + uint32(len(lowResData))
-	mipMaps := imageutils.GenerateMipmaps(tex)
+	mipMaps, err := imageutils.GenerateMipmaps(tex)
+	if err != nil {
+		return err
+	}
 
 	// --- Write resource dictionaries ---
 	if err := WriteResourceEntry(w, TagLORES, 0, lowResOffset); err != nil {

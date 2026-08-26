@@ -1,13 +1,24 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 package imageutils
 
-import "github.com/Lauloque/goVTF/texture"
+import (
+	"fmt"
+
+	"github.com/Lauloque/goVTF/texture"
+)
 
 // Resize resizes an RGBA8888 pixel buffer using nearest-neighbor sampling.
 //
 // pixels must contain srcW * srcH * 4 bytes.
 // All dimensions must be positive.
-func Resize(srcPixels []byte, srcW, srcH, dstW, dstH int) []byte {
+func Resize(srcPixels []byte, srcW, srcH, dstW, dstH int) ([]byte, error) {
+	if srcW <= 0 || srcH <= 0 || dstW <= 0 || dstH <= 0 {
+		return nil, fmt.Errorf("resize: dimensions must be positive, got src=%dx%d dst=%dx%d", srcW, srcH, dstW, dstH)
+	}
+	if len(srcPixels) < srcW*srcH*4 {
+		return nil, fmt.Errorf("resize: pixel buffer too small for %dx%d", srcW, srcH)
+	}
+
 	newPixels := make([]byte, dstW*dstH*4)
 	stepX := srcW / dstW
 	stepY := srcH / dstH
@@ -21,13 +32,17 @@ func Resize(srcPixels []byte, srcW, srcH, dstW, dstH int) []byte {
 			copy(newPixels[dstIdx:], srcPixels[srcIdx:srcIdx+4])
 		}
 	}
-	return newPixels
+	return newPixels, nil
 }
 
 // downSampleHalf outputs a texture half the width and height of the tex.using a
 // 2x2 box filter. Used for mipmapping.
 // Requires both dimensions to be divisible by 2
-func downSampleHalf(tex *texture.Texture) *texture.Texture {
+func downSampleHalf(tex *texture.Texture) (*texture.Texture, error) {
+	if tex.Width%2 != 0 || tex.Height%2 != 0 {
+		return nil, fmt.Errorf("downSampleHalf: dimensions must be even, got %dx%d", tex.Width, tex.Height)
+	}
+
 	w, h := tex.Width/2, tex.Height/2
 	pixels := make([]byte, w*h*4)
 
@@ -51,5 +66,5 @@ func downSampleHalf(tex *texture.Texture) *texture.Texture {
 			pixels[dstIdx+3] = byte(a / 4)
 		}
 	}
-	return texture.NewTexture(w, h, texture.PixelFormatRGBA8888, pixels)
+	return texture.NewTexture(w, h, texture.PixelFormatRGBA8888, pixels), nil
 }
