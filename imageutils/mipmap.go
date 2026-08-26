@@ -2,73 +2,36 @@
 package imageutils
 
 import (
-	"image"
-
 	"github.com/Lauloque/goVTF/texture"
 )
 
-// GenerateMipmaps creates all mipmap levels for a texture
-// Uses simple box filtering (avg of 2×2 pixel blocks)
-func GenerateMipmaps(src *texture.Texture) [][]byte {
-	var mipMaps [][]byte
+// GenerateMipmaps returns DXT1-compressed mip levels, ordered from smallets to
+// largest (VTF spec unlike usual common DDS).
+// Ignoring top level already included in highres resource.
+func GenerateMipmaps(tex *texture.Texture) [][]byte {
+	var levels []*texture.Texture
 
-	img := src.ToImage()
-	imgBounds := img.Bounds()
+	currentTex := tex
+	for currentTex.Width > 1 && currentTex.Height > 1 {
+		currentTex = downSampleHalf(currentTex)
+		levels = append(levels, currentTex)
+	}
 
-	for w, h := src.Width, src.Height; w >= 1 && h >= 1; {
-		mipmap := image.NewRGBA(image.Rect(0, 0, w, h))
+	// levels are processed largets->smallest so to keep downsampling from the
+	// current level downwards at each level.
+	// Therefore, need to reverse order while compressing to get back to
+	// smallest->largest order.
 
-		for py := 0; py < h; py++ {
-			for px := 0; px < w; px++ {
-				sx := px * 2
-				sy := py * 2
-
-				var r, g, b, a uint32
-				count := uint32(0)
-
-				for dy := 0; dy < 2; dy++ {
-					for dx := 0; dx < 2; dx++ {
-						srcX := sx + dx
-						srcY := sy + dy
-
-						if srcX < imgBounds.Dx() && srcY < imgBounds.Dy() {
-							srcIdx := (srcY*imgBounds.Dx() + srcX) * 4
-							r += uint32(img.Pix[srcIdx])
-							g += uint32(img.Pix[srcIdx+1])
-							b += uint32(img.Pix[srcIdx+2])
-							a += uint32(img.Pix[srcIdx+3])
-							count++
-						}
-					}
-				}
-
-				dstIdx := (py*w + px) * 4
-				if count > 0 {
-					mipmap.Pix[dstIdx] = uint8(r / count)
-					mipmap.Pix[dstIdx+1] = uint8(g / count)
-					mipmap.Pix[dstIdx+2] = uint8(b / count)
-					mipmap.Pix[dstIdx+3] = uint8(a / count)
-				} else {
-					// Out of bounds pixel - set to transparent black
-					mipmap.Pix[dstIdx] = 0
-					mipmap.Pix[dstIdx+1] = 0
-					mipmap.Pix[dstIdx+2] = 0
-					mipmap.Pix[dstIdx+3] = 0
-				}
-			}
-		}
-
-		mipMaps = append(mipMaps, mipmap.Pix)
-
-		w >>= 1
-		h >>= 1
+	mipMaps := make([][]byte, len(levels))
+	for i, lvl := range levels {
+		mipMaps[len(levels)-1-i] = CompressDXT1(lvl)
 	}
 
 	return mipMaps
 }
 
 func CountMipmaps(width, height int) int {
-	count := 0
+	count := 1 // level 0 provided by fullres resource already
 	for w, h := width, height; w >= 1 && h >= 1; {
 		count++
 		w >>= 1
