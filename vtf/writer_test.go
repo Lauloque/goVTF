@@ -9,38 +9,44 @@ import (
 	"github.com/Lauloque/goVTF/texture"
 )
 
-// TestHeaderSize verifies the logical header struct size matches the spec constant.
-// Note: This checks the Go struct size, which might differ from binary layout due to padding.
-// The actual binary write uses packedHeader, so this test is more of a sanity check.
-func TestHeaderSize(t *testing.T) {
-	// We expect the binary size of our logical struct to be close to HeaderSize,
-	// but the critical check is that packedHeader is exactly HeaderSize.
-	var h VTFHeader
-	size := -binary.Size(h)
+const testNumResources = 2 // low-res + high-res, the only two this writer emits
 
-	var p packedHeader
-	psize := binary.Size(p)
-
-	t.Logf("Logical VTFHeader size: %d, packedHeader size: %d, HeaderSize constant: %d", size, psize, HeaderSize)
-
-	// if the struc gets padding, comparing size to HeaderSize might fail, checinkg packedHeader instead:
-	if psize != HeaderSize {
-		t.Errorf("packedHeader size is %d, expected %d", psize, HeaderSize)
-	}
-
+// dxt1Size computes the exact DXT1 byte size for a w×h image, independent of
+// production code — this is what a compliant DXT1 encoder must output.
+func dxt1Size(w, h int) int {
+	tw := (w + 3) / 4
+	th := (h + 3) / 4
+	return tw * th * 8
 }
 
-// TestVTFHeaderByteOffsets verifies the binary layout matches the spec.
+func encodeUint32(v uint32) []byte {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, v)
+	return b
+}
+
+func TestHeaderSize(t *testing.T) {
+	var p packedHeader
+	if got := binary.Size(p); got != HeaderSize {
+		t.Errorf("packedHeader size is %d, expected %d", got, HeaderSize)
+	}
+}
+
+func TestImageFormatIsDXT1(t *testing.T) {
+	if ImageFormatDXT1 != 13 {
+		t.Errorf("ImageFormatDXT1 = %d, want 13 (per Source engine imageformat.h)", ImageFormatDXT1)
+	}
+}
+
 func TestVTFHeaderByteOffsets(t *testing.T) {
 	tex := texture.NewTexture(512, 512, texture.PixelFormatRGBA8888, make([]byte, 512*512*4))
 	var buf bytes.Buffer
-	err := Write(&buf, tex)
-	if err != nil {
+	if err := Write(&buf, tex); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 	data := buf.Bytes()
+	dynamicHeaderSize := uint32(HeaderSize) + uint32(testNumResources*8)
 
-	// Define checks using constants, not magic numbers
 	checks := []struct {
 		name     string
 		offset   int
@@ -50,17 +56,16 @@ func TestVTFHeaderByteOffsets(t *testing.T) {
 		{"Signature", 0, 4, []byte("VTF\x00")},
 		{"VersionMajor", 4, 4, encodeUint32(SignatureVersionMajor)},
 		{"VersionMinor", 8, 4, encodeUint32(SignatureVersionMinor)},
-		{"HeaderSize", 12, 4, encodeUint32(HeaderSize)},
-		{"LowResWidth", 61, 1, []byte{16}}, // Calculated: min(512, 16) -> 16
+		{"HeaderSize", 12, 4, encodeUint32(dynamicHeaderSize)},
+		{"HighResFormat", 52, 4, encodeUint32(uint32(ImageFormatDXT1))},
+		{"LowResFormat", 57, 4, encodeUint32(uint32(ImageFormatDXT1))},
+		{"LowResWidth", 61, 1, []byte{16}},
 		{"LowResHeight", 62, 1, []byte{16}},
-		{"NumResources", 68, 4, encodeUint32(2)}, // We always write 2 resources
+		{"NumResources", 68, 4, encodeUint32(testNumResources)},
 	}
 
 	for _, tt := range checks {
 		t.Run(tt.name, func(t *testing.T) {
-			if len(data) < tt.offset+tt.length {
-				t.Fatalf("Buffer too short at offset %d", tt.offset)
-			}
 			got := data[tt.offset : tt.offset+tt.length]
 			if !bytes.Equal(got, tt.expected) {
 				t.Errorf("At offset %d (%s): expected %x, got %x", tt.offset, tt.name, tt.expected, got)
@@ -69,94 +74,55 @@ func TestVTFHeaderByteOffsets(t *testing.T) {
 	}
 }
 
-// Helper to encode uint32 to little-endian bytes
-func encodeUint32(v uint32) []byte {
-	b := make([]byte, 4)
-	binary.LittleEndian.PutUint32(b, v)
-	return b
-}
+// TestResourceOffsetsMatchData verifies each resource dictionary entry's
+// stored Offset points to where that resource's data actually begins.
+func TestResourceOffsetsMatchData(t *testing.T) {
+	tex := texture.NewTexture(512, 512, texture.PixelFormatRGBA8888, make([]byte, 512*512*4))
+	var buf bytes.Buffer
+	if err := Write(&buf, tex); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+	data := buf.Bytes()
+	dynamicHeaderSize := uint32(HeaderSize) + uint32(testNumResources*8)
 
-// TestLowResDimensions (Keep as is - logic test)
-func TestLowResDimensions(t *testing.T) {
-	// ... (Your existing logic test remains unchanged) ...
-	tests := []struct {
-		name           string
-		texWidth       int
-		texHeight      int
-		expectedWidth  int
-		expectedHeight int
-	}{
-		{"small 64x64", 64, 64, 16, 16},
-		{"medium 256x256", 256, 256, 16, 16},
-		{"large 512x512", 512, 512, 16, 16},
-		{"non-square 512x128", 512, 128, 16, 16},
+	loResOffset := binary.LittleEndian.Uint32(data[HeaderSize+4 : HeaderSize+8])
+	hiResOffset := binary.LittleEndian.Uint32(data[HeaderSize+12 : HeaderSize+16])
+
+	if loResOffset != dynamicHeaderSize {
+		t.Errorf("LowRes offset = %d, want %d", loResOffset, dynamicHeaderSize)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			lw, lh := tt.texWidth, tt.texHeight
-			if lw > 16 {
-				lw = 16
-			}
-			if lh > 16 {
-				lh = 16
-			}
-			lw = ((lw + 3) / 4) * 4
-			lh = ((lh + 3) / 4) * 4
-
-			if lw != tt.expectedWidth || lh != tt.expectedHeight {
-				t.Errorf("Expected %dx%d, got %dx%d", tt.expectedWidth, tt.expectedHeight, lw, lh)
-			}
-		})
+	wantHiResOffset := dynamicHeaderSize + uint32(dxt1Size(16, 16))
+	if hiResOffset != wantHiResOffset {
+		t.Errorf("HighRes offset = %d, want %d", hiResOffset, wantHiResOffset)
+	}
+	if int(hiResOffset) >= len(data) {
+		t.Fatalf("HighRes offset %d is beyond file length %d", hiResOffset, len(data))
 	}
 }
 
-// TestVTFWriteRoundTrip
 func TestVTFWriteRoundTrip(t *testing.T) {
 	tex := texture.NewTexture(512, 512, texture.PixelFormatRGBA8888, make([]byte, 512*512*4))
 	var buf bytes.Buffer
-	err := Write(&buf, tex)
-	if err != nil {
+	if err := Write(&buf, tex); err != nil {
 		t.Fatalf("Write failed: %v", err)
 	}
 	data := buf.Bytes()
 
-	// Verify Signature
-	if string(data[0:4]) != "VTF\x00" {
-		t.Errorf("Invalid signature")
+	dictSize := uint32(HeaderSize) + uint32(testNumResources*8)
+	lowResSize := dxt1Size(16, 16)
+	mipSizes := 0
+	for size := 256; size >= 1; size /= 2 {
+		mipSizes += dxt1Size(size, size)
 	}
-
-	// Verify Version from Constants
-	major := binary.LittleEndian.Uint32(data[4:8])
-	minor := binary.LittleEndian.Uint32(data[8:12])
-	if major != SignatureVersionMajor || minor != SignatureVersionMinor {
-		t.Errorf("Expected version %d.%d, got %d.%d", SignatureVersionMajor, SignatureVersionMinor, major, minor)
-	}
-
-	// Verify Header Size from Constant
-	headerSize := binary.LittleEndian.Uint32(data[12:16])
-	if headerSize != HeaderSize {
-		t.Errorf("Expected header size %d, got %d", HeaderSize, headerSize)
-	}
-
-	// Verify NumResources
-	numResources := binary.LittleEndian.Uint32(data[68:72])
-	if numResources != 2 {
-		t.Errorf("Expected NumResources=2, got %d", numResources)
-	}
-
-	// Calculate Expected Size Dynamically
-	lowResW, lowResH := uint8(16), uint8(16) // For 512x512
-	lowResDataSize := (int(lowResW) * int(lowResH)) / 2
-	highResDataSize := (512 * 512) / 2
-	expectedTotal := HeaderSize + lowResDataSize + highResDataSize
+	highResSize := dxt1Size(512, 512)
+	expectedTotal := int(dictSize) + lowResSize + mipSizes + highResSize
 
 	if len(data) != expectedTotal {
 		t.Errorf("Expected total size %d, got %d", expectedTotal, len(data))
 	}
 }
 
-// Test dimension validation rejects invalid inputs
 func TestDimensionValidation(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -173,15 +139,9 @@ func TestDimensionValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tex := texture.NewTexture(
-				tt.width, tt.height,
-				texture.PixelFormatRGBA8888,
-				make([]byte, tt.width*tt.height*4),
-			)
-
+			tex := texture.NewTexture(tt.width, tt.height, texture.PixelFormatRGBA8888, make([]byte, tt.width*tt.height*4))
 			var buf bytes.Buffer
 			err := Write(&buf, tex)
-
 			if tt.wantErr && err == nil {
 				t.Errorf("Expected error for %dx%d, got nil", tt.width, tt.height)
 			}
