@@ -83,7 +83,7 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		Reflectivity:  [3]float32{1.0, 1.0, 1.0},
 		BumpmapScale:  1.0,
 		HighResFormat: int32(ImageFormatDXT1), // Forced DXT1 for v1
-		MipmapCount:   1,                      // None for v1
+		MipmapCount:   uint8(mipmapCount),
 		LowResFormat:  int32(ImageFormatDXT1),
 		LowResWidth:   uint8(lowResWidth),
 		LowResHeight:  uint8(lowResHeight),
