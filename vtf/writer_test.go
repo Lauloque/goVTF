@@ -19,6 +19,12 @@ func dxt1Size(w, h int) int {
 	return tw * th * 8
 }
 
+func dxt5Size(w, h int) int {
+	tw := (w + 3) / 4
+	th := (h + 3) / 4
+	return tw * th * 16
+}
+
 func encodeUint32(v uint32) []byte {
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, v)
@@ -120,6 +126,33 @@ func TestVTFWriteRoundTrip(t *testing.T) {
 
 	if len(data) != expectedTotal {
 		t.Errorf("Expected total size %d, got %d", expectedTotal, len(data))
+	}
+}
+
+func TestWriteDXT5HeaderAndSize(t *testing.T) {
+	tex := texture.NewTexture(64, 64, texture.PixelFormatRGBA8888, make([]byte, 64*64*4))
+	var buf bytes.Buffer
+	if err := WriteWithOptions(&buf, tex, WriteOptions{AlphaFormat: ImageFormatDXT5}); err != nil {
+		t.Fatalf("WriteWithOptions failed: %v", err)
+	}
+	data := buf.Bytes()
+
+	if got := int32(binary.LittleEndian.Uint32(data[52:56])); got != ImageFormatDXT5 {
+		t.Errorf("HighResFormat = %d, want DXT5 (%d)", got, ImageFormatDXT5)
+	}
+	flags := binary.LittleEndian.Uint32(data[20:24])
+	if flags&TextureFlagEightBitAlpha == 0 {
+		t.Errorf("Flags %#x do not include TextureFlagEightBitAlpha", flags)
+	}
+
+	dynamicHeaderSize := HeaderSize + testNumResources*8
+	expectedSize := dynamicHeaderSize + dxt1Size(16, 16)
+	for size := 32; size >= 1; size /= 2 {
+		expectedSize += dxt5Size(size, size)
+	}
+	expectedSize += dxt5Size(64, 64)
+	if len(data) != expectedSize {
+		t.Errorf("DXT5 VTF size = %d, want %d", len(data), expectedSize)
 	}
 }
 

@@ -9,6 +9,15 @@ import (
 // largest (VTF spec unlike usual common DDS).
 // Ignoring top level already included in highres resource.
 func GenerateMipmaps(tex *texture.Texture) ([][]byte, error) {
+	return generateMipmaps(tex, CompressDXT1)
+}
+
+// GenerateMipmapsDXT5 returns DXT5-compressed mip levels in VTF order.
+func GenerateMipmapsDXT5(tex *texture.Texture) ([][]byte, error) {
+	return generateMipmaps(tex, CompressDXT5)
+}
+
+func generateMipmaps(tex *texture.Texture, compress func(*texture.Texture) []byte) ([][]byte, error) {
 	var levels []*texture.Texture
 
 	currentTex := tex
@@ -28,7 +37,7 @@ func GenerateMipmaps(tex *texture.Texture) ([][]byte, error) {
 
 	mipMaps := make([][]byte, len(levels))
 	for i, lvl := range levels {
-		mipMaps[len(levels)-1-i] = CompressDXT1(lvl)
+		mipMaps[len(levels)-1-i] = compress(lvl)
 	}
 
 	return mipMaps, nil
