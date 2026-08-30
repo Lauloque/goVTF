@@ -2,6 +2,8 @@
 package imageutils
 
 import (
+	"encoding/binary"
+
 	"github.com/Lauloque/goVTF/texture"
 )
 
@@ -49,6 +51,98 @@ func CompressDXT1(tex *texture.Texture) []byte {
 	}
 
 	return compressed
+}
+
+// CompressDXT5 compresses an RGBA texture to DXT5 (BC3). Each 4x4 block
+// contains an eight-byte alpha block followed by an eight-byte DXT color block.
+func CompressDXT5(tex *texture.Texture) []byte {
+	width := tex.Width
+	height := tex.Height
+	tilesW := (width + 3) / 4
+	tilesH := (height + 3) / 4
+	compressed := make([]byte, tilesW*tilesH*16)
+
+	for ty := 0; ty < tilesH; ty++ {
+		for tx := 0; tx < tilesW; tx++ {
+			var colors [16]uint32
+			var alphas [16]byte
+			for py := 0; py < 4; py++ {
+				for px := 0; px < 4; px++ {
+					i := py*4 + px
+					x := tx*4 + px
+					y := ty*4 + py
+					if x >= width || y >= height {
+						continue
+					}
+					pixel := (y*width + x) * 4
+					r := uint32(tex.Pixels[pixel])
+					g := uint32(tex.Pixels[pixel+1])
+					b := uint32(tex.Pixels[pixel+2])
+					colors[i] = (r << 16) | (g << 8) | b
+					alphas[i] = tex.Pixels[pixel+3]
+				}
+			}
+
+			blockOffset := (ty*tilesW + tx) * 16
+			alphaBlock := compressBlockDXT5Alpha(alphas)
+			colorBlock := compressBlockDXT1(colors)
+			copy(compressed[blockOffset:blockOffset+8], alphaBlock[:])
+			copy(compressed[blockOffset+8:blockOffset+16], colorBlock[:])
+		}
+	}
+
+	return compressed
+}
+
+func compressBlockDXT5Alpha(alphas [16]byte) [8]byte {
+	minAlpha, maxAlpha := byte(255), byte(0)
+	for _, alpha := range alphas {
+		if alpha < minAlpha {
+			minAlpha = alpha
+		}
+		if alpha > maxAlpha {
+			maxAlpha = alpha
+		}
+	}
+
+	palette := [8]byte{maxAlpha, minAlpha}
+	if maxAlpha > minAlpha {
+		for i := 1; i <= 6; i++ {
+			palette[i+1] = byte(((7-i)*int(maxAlpha) + i*int(minAlpha)) / 7)
+		}
+	} else {
+		// Equal endpoints select DXT5's six-alpha mode. Indices zero and one
+		// still reproduce the constant endpoint exactly.
+		for i := 1; i <= 4; i++ {
+			palette[i+1] = byte(((5-i)*int(maxAlpha) + i*int(minAlpha)) / 5)
+		}
+		palette[6] = 0
+		palette[7] = 255
+	}
+
+	var packedIndices uint64
+	for i, alpha := range alphas {
+		bestIndex := 0
+		bestDistance := 256
+		for j, candidate := range palette {
+			distance := int(alpha) - int(candidate)
+			if distance < 0 {
+				distance = -distance
+			}
+			if distance < bestDistance {
+				bestDistance = distance
+				bestIndex = j
+			}
+		}
+		packedIndices |= uint64(bestIndex) << (3 * i)
+	}
+
+	var out [8]byte
+	out[0], out[1] = maxAlpha, minAlpha
+	var packed [8]byte
+	binary.LittleEndian.PutUint64(packed[:], packedIndices)
+	copy(out[2:], packed[:6])
+	return out
 }
 
 // compressBlockDXT1 compresses a single 4×4 pixel block to DXT1 (8 bytes)

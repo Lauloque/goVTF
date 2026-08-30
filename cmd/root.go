@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	outputDir string
+	outputDir   string
+	alphaFormat string
 )
 
 // rootCmd represents the base command when called without any subcommands

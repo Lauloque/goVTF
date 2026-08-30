@@ -19,6 +19,10 @@ var fileCmd = &cobra.Command{
 	Long:  `Input file path to a png, jpg or tga image to process.`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if alphaFormat != "dxt1" && alphaFormat != "dxt5" {
+			return fmt.Errorf("Unsupported alpha format %q (supported: dxt1, dxt5)", alphaFormat)
+		}
+
 		input_path := args[0]
 
 		_, err := os.Stat(input_path)
@@ -79,7 +83,11 @@ var fileCmd = &cobra.Command{
 		defer f.Close()
 
 		// Output file writing
-		if err := vtf.Write(f, tex); err != nil {
+		outputFormat := int32(vtf.ImageFormatDXT1)
+		if alphaFormat == "dxt5" {
+			outputFormat = int32(vtf.ImageFormatDXT5)
+		}
+		if err := vtf.WriteWithOptions(f, tex, vtf.WriteOptions{AlphaFormat: outputFormat}); err != nil {
 			return fmt.Errorf("Error writing VTF: %w", err)
 		}
 
@@ -90,6 +98,7 @@ var fileCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(fileCmd)
+	fileCmd.Flags().StringVar(&alphaFormat, "alphaformat", "dxt1", "Output format to use for textures with alpha (dxt1 or dxt5)")
 
 	// Here you will define your flags and configuration settings.
 

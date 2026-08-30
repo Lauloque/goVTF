@@ -2,29 +2,91 @@
 
 ## What is this?
 
-goVTF is a humble attempt to imit ate VTFLib and VTFCmd, VALVe's library and its CLI to create a "Valve Texture File" (VTF) used in VALVe games. But usable in Linux.
+goVTF is a humble attempt to imitate VTFLib and VTFCmd, Valve's library and CLI for creating Valve Texture Format (VTF) files, with Linux support.
 
-It is made in the context of [Boot.dev's Interactive Course: First Personal Project ](https://www.boot.dev/courses/build-personal-project-1).
+It was created in the context of [Boot.dev's Interactive Course: First Personal Project](https://www.boot.dev/courses/build-personal-project-1).
 
 <img width="900" height="550" alt="image" src="https://github.com/user-attachments/assets/606dbef9-033b-428b-9f5c-3f3e41870c3a" />
 
+The current implementation converts PNG and JPEG images to VTF 7.3. It supports DXT1 output and DXT5 output for images requiring transparency.
 
-First implementation should just be able to take a common picture file without transparency and output a VTF usable as a "spray" in TF2.
+## Current usage
 
-## General usage:
+Long options use two hyphens. Although the CLI also provides the conventional
+short forms `-h` and `-o`, the examples below consistently use long options.
 
-`goVTF [command]`
+```text
+goVTF file <path> [options]
+```
 
-Available Commands:
-`completion` Generate the autocompletion script for the specified shell
-`file` Input file path
-`help` Help about any command
+### Implemented options
 
-Flags:
-`-h`, `--help` help for goVTF
-`-o`, `--output` string Output directory (default "./")
+- `--output <directory>` — output directory (default: `./`).
+- `--alphaformat <format>` — high-resolution output format. Supported values
+  are `dxt1` and `dxt5` (default: `dxt1`). Use `dxt5` to retain an image's
+  full alpha channel.
+- `--help` — display help.
 
-Use `goVTF [command] --help` for more information about a command.
+The input path is a positional argument to the `file` command; `--file` is not
+an implemented option.
+
+### Examples
+
+Convert an opaque image using the default DXT1 format:
+
+```bash
+goVTF file image.png --output ./
+```
+
+Convert a PNG while retaining full transparency with DXT5:
+
+```bash
+goVTF file image.png --alphaformat dxt5 --output ./
+```
+
+Use `goVTF --help` or `goVTF file --help` for generated command help.
+
+## Potential future options
+
+The following options are inspired by VTFCmd. They are ideas for future work
+and are **not currently implemented or accepted by goVTF**:
+
+```text
+--folder <path>             Input directory search string.
+--prefix <string>           Output file prefix.
+--postfix <string>          Output file postfix.
+--version <string>          Output VTF version.
+--format <string>           Output format for non-alpha textures.
+--flag <string>             Output flag to set.
+--resize                    Resize the input to a power of two.
+--rmethod <string>          Resize method.
+--rfilter <string>          Resize filter.
+--rsharpen <string>         Resize sharpening filter.
+--rwidth <integer>          Resize to a specific width.
+--rheight <integer>         Resize to a specific height.
+--rclampwidth <integer>     Maximum resize width.
+--rclampheight <integer>    Maximum resize height.
+--gamma                     Gamma-correct the image.
+--gcorrection <number>      Gamma correction value.
+--nomipmaps                 Do not generate mipmaps.
+--mfilter <string>          Mipmap filter.
+--msharpen <string>         Mipmap sharpening filter.
+--normal                    Convert the input to a normal map.
+--nkernel <string>          Normal-map generation kernel.
+--nheight <string>          Normal-map height calculation.
+--nalpha <string>           Normal-map alpha result.
+--nscale <number>           Normal-map scale.
+--nwrap                     Wrap the normal map for tiled textures.
+--bumpscale <number>        Engine bump-mapping scale.
+--nothumbnail               Do not generate a thumbnail image.
+--noreflectivity            Do not calculate reflectivity.
+--shader <string>           Create a material for the texture.
+--param <string> <string>   Add a parameter to the material.
+--recurse                   Process directories recursively.
+--exportformat <string>     Export VTF files to another image format.
+--silent                    Silent mode.
+--pause                     Pause when finished.
+```
 
 ## Resources
 
@@ -40,48 +102,8 @@ Use `goVTF [command] --help` for more information about a command.
 
 - [VTF Spray Converter](https://rafradek.github.io/Mishcatt/)
 
-```
--file <path>             (Input file path.)
--folder <path>           (Input directory search string.)
--output <path>           (Output directory.)
--prefix <string>         (Output file prefix.)
--postfix <string>        (Output file postfix.)
--version <string>        (Ouput version.)
--format <string>         (Ouput format to use on non-alpha textures.)
--alphaformat <string>    (Ouput format to use on alpha textures.)
--flag <string>           (Output flags to set.)
--resize                  (Resize the input to a power of 2.)
--rmethod <string>        (Resize method to use.)
--rfilter <string>        (Resize filter to use.)
--rsharpen <string>       (Resize sharpen filter to use.)
--rwidth <integer>        (Resize to specific width.)
--rheight <integer>       (Resize to specific height.)
--rclampwidth <integer>   (Maximum width to resize to.)
--rclampheight <integer>  (Maximum height to resize to.)
--gamma                   (Gamma correct image.)
--gcorrection <single>    (Gamma correction to use.)
--nomipmaps               (Don't generate mipmaps.)
--mfilter <string>        (Mipmap filter to use.)
--msharpen <string>       (Mipmap sharpen filter to use.)
--normal                  (Convert input file to normal map.)
--nkernel <string>        (Normal map generation kernel to use.)
--nheight <string>        (Normal map height calculation to use.)
--nalpha <string>         (Normal map alpha result to set.)
--nscale <single>         (Normal map scale to use.)
--nwrap                   (Wrap the normal map for tiled textures.)
--bumpscale <single>      (Engine bump mapping scale to use.)
--nothumbnail             (Don't generate thumbnail image.)
--noreflectivity          (Don't calculate reflectivity.)
--shader <string>         (Create a material for the texture.)
--param <string> <string> (Add a parameter to the material.)
--recurse                 (Process directories recursively.)
--exportformat <string>   (Convert VTF files to the format of this extension.)
--silent                  (Silent mode.)
--pause                   (Pause when done.)
--help                    (Display vtfcmd help.)
-```
-
 ### License
 
-Project: see [LICENSE]()
+Project: see [LICENSE](LICENSE).
+
 VTF.jpeg: test file taken from [Steam 社群 :: :: VTF Edit-Chan](https://steamcommunity.com/sharedfiles/filedetails/?&id=3046622181)

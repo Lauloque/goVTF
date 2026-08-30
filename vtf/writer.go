@@ -9,10 +9,21 @@ import (
 	"github.com/Lauloque/goVTF/texture"
 )
 
+type WriteOptions struct {
+	AlphaFormat int32
+}
+
 func Write(w io.Writer, tex *texture.Texture) error {
+	return WriteWithOptions(w, tex, WriteOptions{AlphaFormat: ImageFormatDXT1})
+}
+
+func WriteWithOptions(w io.Writer, tex *texture.Texture, options WriteOptions) error {
 	// ============VALIDATION===========================================
 	if err := imageutils.ValidateDimensions(uint(tex.Width), uint(tex.Height)); err != nil {
 		return err
+	}
+	if options.AlphaFormat != ImageFormatDXT1 && options.AlphaFormat != ImageFormatDXT5 {
+		return fmt.Errorf("unsupported alpha format: %d", options.AlphaFormat)
 	}
 
 	// ============CALCULATE LOW REST DIMENSION ========================
@@ -49,8 +60,13 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	mipmapCount := imageutils.CountMipmaps(tex.Width, tex.Height)
 	fmt.Printf("Mipmap count: %d\n", mipmapCount)
 
-	// ============ PREPARE HIGH RES DATA (DXT1)========================
+	// ============ PREPARE HIGH RES DATA ===============================
 	highResData := imageutils.CompressDXT1(tex)
+	flags := uint32(SprayFlags)
+	if options.AlphaFormat == ImageFormatDXT5 {
+		highResData = imageutils.CompressDXT5(tex)
+		flags |= TextureFlagEightBitAlpha
+	}
 	// should implement error handling later
 
 	// ============CONSTRUCT HEADER=====================================
@@ -62,12 +78,12 @@ func Write(w io.Writer, tex *texture.Texture) error {
 		HeaderSize:    headerSize,
 		Width:         uint16(tex.Width),
 		Height:        uint16(tex.Height),
-		Flags:         uint32(SprayFlags),
+		Flags:         flags,
 		Frames:        1,
 		FirstFrame:    0,
 		Reflectivity:  [3]float32{1.0, 1.0, 1.0},
 		BumpmapScale:  1.0,
-		HighResFormat: int32(ImageFormatDXT1), // Forced DXT1 for v1
+		HighResFormat: options.AlphaFormat,
 		MipmapCount:   uint8(mipmapCount),
 		LowResFormat:  int32(ImageFormatDXT1),
 		LowResWidth:   uint8(lowResWidth),
@@ -87,7 +103,12 @@ func Write(w io.Writer, tex *texture.Texture) error {
 	// Header (80) + LowResEntry (8) + LowResData + HighResEntry (8)
 	lowResOffset := headerSize
 	highResOffset := lowResOffset + uint32(len(lowResData))
-	mipMaps, err := imageutils.GenerateMipmaps(tex)
+	var mipMaps [][]byte
+	if options.AlphaFormat == ImageFormatDXT5 {
+		mipMaps, err = imageutils.GenerateMipmapsDXT5(tex)
+	} else {
+		mipMaps, err = imageutils.GenerateMipmaps(tex)
+	}
 	if err != nil {
 		return err
 	}
